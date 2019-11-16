@@ -3,8 +3,10 @@ import ReactDOM from 'react-dom';
 
 import { DrizzleProvider } from 'drizzle-react';
 
-import './index.css';
-import App from './App';
+import './css/index.css';
+import './css/App.css';
+
+import App from './components/App';
 
 import options from "./drizzle";
 

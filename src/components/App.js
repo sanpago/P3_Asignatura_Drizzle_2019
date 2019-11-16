@@ -3,8 +3,7 @@ import React from 'react';
 import {drizzleConnect} from 'drizzle-react';
 import PropTypes from 'prop-types'
 
-import './App.css';
-
+import AppHeader from './AppHeader';
 
 const mapStateToProps = state => {
     return {
@@ -37,9 +36,7 @@ class App extends React.Component {
 
         return (
             <main>
-                <header className="App">
-                    <h1>P3 - Asignatura</h1>
-                </header>
+                <AppHeader/>
             </main>
         );
     }
