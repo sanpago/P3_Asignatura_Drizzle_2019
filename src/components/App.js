@@ -4,6 +4,9 @@ import {drizzleConnect} from 'drizzle-react';
 import PropTypes from 'prop-types'
 
 import AppHeader from './AppHeader';
+import AppEvaluaciones from "./AppEvaluaciones";
+import AppAlumnos from "./AppAlumnos";
+import AppCalificaciones from "./AppCalificaciones";
 
 const mapStateToProps = state => {
     return {
@@ -37,10 +40,14 @@ class App extends React.Component {
         return (
             <main>
                 <AppHeader/>
+                <AppEvaluaciones/>
+                <AppAlumnos/>
+                <AppCalificaciones/>
             </main>
         );
     }
 }
+
 
 App.contextTypes = {
     drizzle: PropTypes.object
