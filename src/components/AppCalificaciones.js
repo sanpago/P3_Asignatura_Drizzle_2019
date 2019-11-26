@@ -1,17 +1,8 @@
 import React from 'react';
 
-import {drizzleConnect} from 'drizzle-react';
-import PropTypes from 'prop-types'
+import {newContextComponents} from "drizzle-react-components";
 
-
-let contador = 0;
-
-const mapStateToProps = state => {
-    return {
-        Asignatura: state.contracts.Asignatura
-    }
-}
-
+const {ContractData} = newContextComponents;
 
 class AppCalificaciones extends React.Component {
 
@@ -19,26 +10,24 @@ class AppCalificaciones extends React.Component {
         ready: false,
         evaluacionesLengthKey: null,
         matriculasLengthKey: null,
-        matriculasKeys: [],        // [indice matricula]
-        calificacionesKeys: []   // [indice matricula][indice evaluacion]
+        matriculasKeys: []
     }
 
-    constructor(props, context) {
+    constructor(props) {
         super(props)
-        this.drizzle = context.drizzle;
     }
 
     componentDidMount() {
         this.setState({ready: true});
     }
 
-
     componentDidUpdate(prevProps, prevState, snapshoot) {
+        const {drizzle, drizzleState} = this.props;
 
-        const instanceState = this.props.Asignatura;
+        const instanceState = drizzleState.contracts.Asignatura;
         if (!instanceState || !instanceState.initialized) return;
 
-        const instance = this.drizzle.contracts.Asignatura;
+        const instance = drizzle.contracts.Asignatura;
 
         let changed = false;
 
@@ -46,119 +35,99 @@ class AppCalificaciones extends React.Component {
         let {
             evaluacionesLengthKey,
             matriculasLengthKey,
-            matriculasKeys,
-            calificacionesKeys
+            matriculasKeys
         } = JSON.parse(JSON.stringify(this.state));
 
-
-        if (!evaluacionesLengthKey) { // Observar el metodo evaluacionesLength().
+        if (!evaluacionesLengthKey) {
             evaluacionesLengthKey = instance.methods.evaluacionesLength.cacheCall();
             changed = true;
         }
-
         let el = instanceState.evaluacionesLength[this.state.evaluacionesLengthKey];
-        let evaluacionesLength = el ? el.value : 0;
+        el = el ? el.value : 0;
 
-        if (!matriculasLengthKey) { // Observar el metodo matriculasLength().
+        if (!matriculasLengthKey) {
             matriculasLengthKey = instance.methods.matriculasLength.cacheCall();
             changed = true;
         }
-
         let ml = instanceState.matriculasLength[this.state.matriculasLengthKey];
-        let matriculasLength = ml ? ml.value : 0;
+        ml = ml ? ml.value : 0;
 
-        for (let i = 0; i < matriculasLength; i++) {
+        for (let i = 0; i < ml; i++) {
             if (!matriculasKeys[i]) {
                 matriculasKeys[i] = instance.methods.matriculas.cacheCall(i);
                 changed = true;
             }
         }
 
-        for (let mi = 0; mi < matriculasLength; mi++) {
-            calificacionesKeys[mi] = calificacionesKeys[mi] || [];
-
-            let addr = instanceState.matriculas[this.state.matriculasKeys[mi]];
-            addr = addr ? addr.value : false;
-
-            if (addr) {
-                for (let ei = calificacionesKeys[mi].length ; ei < evaluacionesLength; ei++) {
-                    if (!calificacionesKeys[mi][ei]) {
-                        calificacionesKeys[mi][ei] = instance.methods.calificaciones.cacheCall(addr, ei);
-                        changed = true;
-                    }
-                }
-            }
-        }
-
-        //console.log(calificaciones)
         if (changed) {
             this.setState({
                 evaluacionesLengthKey,
                 matriculasLengthKey,
-                matriculasKeys,
-                calificacionesKeys
+                matriculasKeys
             });
         }
     }
 
     render() {
-        let thead;
-        let tbody;
+        const {drizzle, drizzleState} = this.props;
 
-        const instanceState = this.props.Asignatura;
-        if (instanceState && instanceState.initialized) {
+        const instanceState = drizzleState.contracts.Asignatura;
+        if (!this.state.ready || !instanceState || !instanceState.initialized) {
+            return <span>Initializing...</span>;
+        }
 
-            let el = instanceState.evaluacionesLength[this.state.evaluacionesLengthKey];
-            let evaluacionesLength = el ? el.value : 0;
+        let el = instanceState.evaluacionesLength[this.state.evaluacionesLengthKey];
+        el = el ? el.value : 0;
 
-            let calificaciones = [];
-            for (let mi = 0; mi < this.state.calificacionesKeys.length; mi++) {
-                calificaciones[mi] = [];
-                for (let ei = 0; ei < this.state.calificacionesKeys[mi].length; ei++) {
-                    const cal = instanceState.calificaciones[this.state.calificacionesKeys[mi][ei]];
-                    calificaciones[mi][ei] = cal ? cal.value : {tipo: "??", calificacion: 0};
+        let ml = instanceState.matriculasLength[this.state.matriculasLengthKey];
+        ml = ml ? ml.value : 0;
+
+        let thead = [<th key={"ha"}>A-E</th>];
+         for (let i = 0; i < el; i++) {
+            thead.push(<th key={"h-" + i}>E {i}</th>);
+        }
+
+        let calificaciones = [];
+        for (let mi = 0; mi < ml ; mi++) {
+            calificaciones[mi] = [];
+
+            let addr = instanceState.matriculas[this.state.matriculasKeys[mi]];
+            addr = addr ? addr.value : false;
+
+            if (addr) {
+                for (let ei = 0; ei < el; ei++) {
+
+                    calificaciones[mi][ei] = (
+                        <ContractData
+                            drizzle={drizzle}
+                            drizzleState={drizzleState}
+                            contract={"Asignatura"}
+                            method={"calificaciones"}
+                            methodArgs={[addr, ei]}
+                            render={nota => (
+                                <td key={"p2-" + mi + "-" + ei}>
+                                    {nota.tipo === "0" ? "N.P." : ""}
+                                    {nota.tipo === "1" ? (nota.calificacion / 10).toFixed(1) : ""}
+                                    {nota.tipo === "2" ? (nota.calificacion / 10).toFixed(1) + "(M.H.)" : ""}
+                                </td>
+                            )}
+                        />
+                    );
                 }
             }
-
-            thead = [
-                <th key={"ha"}>A-E</th>
-            ];
-            for (let i = 0 ; i < evaluacionesLength ; i++) {
-                thead.push(<th key={"h-"+i}>E {i}</th>);
-            }
-
-            tbody = calificaciones.map((row, mi) => {
-                let x = row.map((col, ei) => {
-                    let str;
-                    switch (col.tipo) {
-                        case "0":
-                            str = "N.P."
-                            break;
-                        case "1":
-                            str = (col.calificacion/10).toFixed(1);
-                            break;
-                        case "2":
-                            str = (col.calificacion/10).toFixed(1) + "(M.H.)";
-                            break;
-                        default:
-                            str = "-"
-                    }
-                    return (
-                        <td key={"p2-" + mi + "-" + ei}>{str}</td>
-                    );
-                })
-                return (
-                    <tr key={"d" + mi}>
-                        <th>A {mi}</th>
-                        {x}
-                    </tr>);
-            })
         }
+
+        let tbody = calificaciones.map((row, mi) => (
+            <tr key={"d" + mi}>
+                <th>A {mi}</th>
+                {row}
+            </tr>)
+        );
 
         return (
             <section>
                 <h1>Calificaciones</h1>
-                <table border={3}>
+                <table>
                     <thead>{thead}</thead>
                     <tbody>{tbody}</tbody>
                 </table>
@@ -167,11 +136,4 @@ class AppCalificaciones extends React.Component {
     }
 }
 
-
-AppCalificaciones.contextTypes = {
-    drizzle: PropTypes.object
-};
-
-const AppCalificacionesContainer = drizzleConnect(AppCalificaciones, mapStateToProps);
-
-export default AppCalificacionesContainer;
+export default AppCalificaciones;

@@ -1,28 +1,19 @@
 import React from 'react';
 
-import {drizzleConnect} from 'drizzle-react';
-import PropTypes from 'prop-types'
+import {newContextComponents} from "drizzle-react-components";
 
-
-const mapStateToProps = state => {
-    return {
-        Asignatura: state.contracts.Asignatura
-    }
-}
-
+const {ContractData} = newContextComponents;
 
 class AppAlumnos extends React.Component {
 
     state = {
         ready: false,
         matriculasLengthKey: null,
-        matriculasKeys: [],
-        datosAlumnoKeys: []
+        matriculasKeys: []
     }
 
-    constructor(props, context) {
+    constructor(props) {
         super(props)
-        this.drizzle = context.drizzle;
     }
 
     componentDidMount() {
@@ -30,22 +21,22 @@ class AppAlumnos extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshoot) {
+        const {drizzle, drizzleState} = this.props;
 
-        const instanceState = this.props.Asignatura;
+        const instanceState = drizzleState.contracts.Asignatura;
         if (!instanceState || !instanceState.initialized) return;
 
-        const instance = this.drizzle.contracts.Asignatura;
+        const instance = drizzle.contracts.Asignatura;
 
         let changed = false;
 
         // Copiar el estado
         let {
             matriculasLengthKey,
-            matriculasKeys,
-            datosAlumnoKeys
+            matriculasKeys
         } = JSON.parse(JSON.stringify(this.state));
 
-        if (!matriculasLengthKey) { // Observar el metodo matriculasLength().
+        if (!matriculasLengthKey) {
             matriculasLengthKey = instance.methods.matriculasLength.cacheCall();
             changed = true;
         } else {
@@ -56,67 +47,71 @@ class AppAlumnos extends React.Component {
                     matriculasKeys[i] = instance.methods.matriculas.cacheCall(i);
                     changed = true;
                 }
-
-                if (matriculasKeys[i]) {
-                    let addr = instanceState.matriculas[this.state.matriculasKeys[i]];
-                    if (addr) {
-                        addr = addr.value;
-                        if (!datosAlumnoKeys[i]) {
-                            datosAlumnoKeys[i] = instance.methods.datosAlumno.cacheCall(addr);
-                            changed = true;
-                        }
-                    }
-                }
             }
         }
 
         if (changed) {
             this.setState({
                 matriculasLengthKey,
-                matriculasKeys,
-                datosAlumnoKeys
+                matriculasKeys
             });
         }
     }
 
 
     render() {
+        const {drizzle, drizzleState} = this.props;
 
-        let matriculasLength;
-        let tbody;
-
-        const instanceState = this.props.Asignatura;
-        if (instanceState && instanceState.initialized) {
-
-            let ml = instanceState.matriculasLength[this.state.matriculasLengthKey];
-            matriculasLength = ml ? ml.value : "??";
-
-            let matriculas = [];
-            for (let i = 0; i < this.state.matriculasKeys.length; i++) {
-                const addr = instanceState.matriculas[this.state.matriculasKeys[i]];
-                matriculas[i] = addr ? addr.value : "";
-            }
-
-            let datosAlumnos = [];
-            for (let i = 0; i < this.state.datosAlumnoKeys.length; i++) {
-                const da = instanceState.datosAlumno[this.state.datosAlumnoKeys[i]];
-                datosAlumnos[i] = da ? da.value : {nombre: "??", email: "@"};
-            }
-
-            tbody = datosAlumnos.map((datosAlumno, index) =>
-                <tr key={index}>
-                    <th>A {index}</th>
-                    <td>{matriculas[index]}</td>
-                    <td>{datosAlumno.nombre}</td>
-                    <td>{datosAlumno.email}</td>
-                </tr>)
+        const instanceState = drizzleState.contracts.Asignatura;
+        if (!this.state.ready || !instanceState || !instanceState.initialized) {
+            return <span>Initializing...</span>;
         }
+
+        let ml = instanceState.matriculasLength[this.state.matriculasLengthKey];
+        ml = ml ? ml.value : "??";
+
+        let tbody = [];
+        for (let i = 0; i < ml; i++) {
+
+            let addr = instanceState.matriculas[this.state.matriculasKeys[i]];
+            addr = addr ? addr.value : "";
+
+            tbody[i] = (
+                <tr key={"ALU-" + i}>
+                    <th>A {i}</th>
+                    <ContractData
+                        drizzle={drizzle}
+                        drizzleState={drizzleState}
+                        contract={"Asignatura"}
+                        method={"matriculas"}
+                        methodArgs={[i]}
+                        render={matricula => (
+                            <td>{matricula}</td>
+                        )}
+                    />
+                    <ContractData
+                        drizzle={drizzle}
+                        drizzleState={drizzleState}
+                        contract={"Asignatura"}
+                        method={"datosAlumno"}
+                        methodArgs={[addr]}
+                        render={datos => (
+                            <>
+                                <td>{datos.nombre}</td>
+                                <td>{datos.email}</td>
+                            </>
+                        )}
+                    />
+                </tr>
+            );
+        }
+
 
         return (
             <section>
-                <h1>Alumnos [{matriculasLength}]</h1>
+                <h1>Alumnos [{ml}]</h1>
 
-                <table border={1}>
+                <table>
                     <thead>
                     <tr>
                         <th>#</th>
@@ -135,11 +130,4 @@ class AppAlumnos extends React.Component {
 }
 
 
-AppAlumnos.contextTypes = {
-    drizzle: PropTypes.object
-};
-
-
-const AppAlumnosContainer = drizzleConnect(AppAlumnos, mapStateToProps);
-
-export default AppAlumnosContainer;
+export default AppAlumnos;

@@ -1,58 +1,35 @@
-
 import React from 'react';
-import {drizzleConnect} from 'drizzle-react';
-import PropTypes from 'prop-types'
+
+import {DrizzleContext} from "drizzle-react";
 
 import AppHeader from './AppHeader';
 import AppEvaluaciones from "./AppEvaluaciones";
 import AppAlumnos from "./AppAlumnos";
 import AppCalificaciones from "./AppCalificaciones";
 
-const mapStateToProps = state => {
-    return {
-        drizzleStatus: state.drizzleStatus,
-        web3: state.web3
-    }
-}
+export default () => (
+    <DrizzleContext.Consumer>
+        {drizzleContext => {
+            const {drizzle, drizzleState, initialized} = drizzleContext;
 
+            if (!initialized) {
+                return (
+                    <main><h1>⚙️ Cargando dapp...</h1></main>
+                );
+            }
 
-class App extends React.Component {
-
-    render() {
-        if (this.props.web3.status === 'failed') {
-            return ( // Display a web3 warning.
+            return (
                 <main>
-                    <h1>⚠️</h1>
-                    <p>No connection to the Ethereum network. Please use the MetaMask extension.</p>
-                </main>
-            )
-        }
-
-        if (!this.props.drizzleStatus.initialized) {
-            return ( // Display a loading indicator.
-                <main>
-                    <h1>⚙️</h1>
-                    <p>Loading dapp...</p>
+                    <AppHeader drizzle={drizzle}
+                               drizzleState={drizzleState}/>
+                    <AppEvaluaciones drizzle={drizzle}
+                                     drizzleState={drizzleState}/>
+                    <AppAlumnos drizzle={drizzle}
+                                drizzleState={drizzleState}/>
+                    <AppCalificaciones drizzle={drizzle}
+                                       drizzleState={drizzleState}/>
                 </main>
             );
-        }
-
-        return (
-            <main>
-                <AppHeader/>
-                <AppEvaluaciones/>
-                <AppAlumnos/>
-                <AppCalificaciones/>
-            </main>
-        );
-    }
-}
-
-
-App.contextTypes = {
-    drizzle: PropTypes.object
-};
-
-const AppContainer = drizzleConnect(App, mapStateToProps);
-
-export default AppContainer;
+        }}
+    </DrizzleContext.Consumer>
+);

@@ -1,27 +1,18 @@
 import React from 'react';
 
-import {drizzleConnect} from 'drizzle-react';
-import PropTypes from 'prop-types'
+import {newContextComponents} from "drizzle-react-components";
 
-
-const mapStateToProps = state => {
-    return {
-        Asignatura: state.contracts.Asignatura
-    }
-}
-
+const {ContractData} = newContextComponents;
 
 class AppEvaluaciones extends React.Component {
 
     state = {
         ready: false,
-        evaluacionesLengthKey: null,
-        evaluacionesKeys: []
+        evaluacionesLengthKey: null
     }
 
-    constructor(props, context) {
+    constructor(props) {
         super(props)
-        this.drizzle = context.drizzle;
     }
 
     componentDidMount() {
@@ -29,73 +20,54 @@ class AppEvaluaciones extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshoot) {
+        const {drizzle, drizzleState} = this.props;
 
-        const instanceState = this.props.Asignatura;
+        const instanceState = drizzleState.contracts.Asignatura;
         if (!instanceState || !instanceState.initialized) return;
 
-        const instance = this.drizzle.contracts.Asignatura;
-
-        let changed = false;
-
-        // Copiar el estado
-        let {
-            evaluacionesLengthKey,
-            evaluacionesKeys
-        } = JSON.parse(JSON.stringify(this.state));
-
-        if (!evaluacionesLengthKey) { // Observar el metodo evaluacionesLength().
-            evaluacionesLengthKey = instance.methods.evaluacionesLength.cacheCall();
-            changed = true;
-        } else {
-            let el = instanceState.evaluacionesLength[this.state.evaluacionesLengthKey];
-            el = el ? el.value : 0;
-            for (let i = evaluacionesKeys.length; i < el; i++) {
-                evaluacionesKeys[i] = instance.methods.evaluaciones.cacheCall(i);
-                changed = true;
-            }
-        }
-
-        //console.log(calificaciones)
-        if (changed) {
+        if (!this.state.evaluacionesLengthKey) {
+            const instance = drizzle.contracts.Asignatura;
             this.setState({
-                evaluacionesLengthKey,
-                evaluacionesKeys
+                evaluacionesLengthKey: instance.methods.evaluacionesLength.cacheCall()
             });
         }
-
     }
 
-
     render() {
+        const {drizzle, drizzleState} = this.props;
 
-        let evaluacionesLength;
-        let tbody;
-
-        const instanceState = this.props.Asignatura;
-        if (instanceState && instanceState.initialized) {
-
-            let el = instanceState.evaluacionesLength[this.state.evaluacionesLengthKey];
-            evaluacionesLength = el ? el.value : 0;
-
-            let evaluaciones = [];
-            for (let i = 0; i < this.state.evaluacionesKeys.length; i++) {
-                const eva = instanceState.evaluaciones[this.state.evaluacionesKeys[i]];
-                evaluaciones[i] = eva ? eva.value : {nombre: "??", fecha: 0, puntos: 0};
-            }
-
-            tbody = evaluaciones.map((evaluacion, index) =>
-                <tr key={index}>
-                    <th>E {index}</th>
-                    <td>{evaluacion.nombre}</td>
-                    <td>{evaluacion.fecha ? (new Date(1000 * evaluacion.fecha)).toLocaleString() : ""}</td>
-                    <td>{(evaluacion.puntos / 10).toFixed(1)}</td>
-                </tr>);
+        const instanceState = drizzleState.contracts.Asignatura;
+        if (!this.state.ready || !instanceState || !instanceState.initialized) {
+            return <span>Initializing...</span>;
         }
 
+        let el = instanceState.evaluacionesLength[this.state.evaluacionesLengthKey];
+        el = el ? el.value : 0;
+
+        let tbody = [];
+        for (let i = 0; i < el; i++) {
+            tbody[i] = (
+                <ContractData
+                    drizzle={drizzle}
+                    drizzleState={drizzleState}
+                    contract={"Asignatura"}
+                    method={"evaluaciones"}
+                    methodArgs={[i]}
+                    render={evaluacion => (
+                        <tr key={"EVA-"+i}>
+                            <th>E {i}</th>
+                            <td>{evaluacion.nombre}</td>
+                            <td>{evaluacion.fecha ? (new Date(1000 * evaluacion.fecha)).toLocaleString() : ""}</td>
+                            <td>{(evaluacion.puntos / 10).toFixed(1)}</td>
+                        </tr>
+                    )}
+                />);
+        }
 
         return (
             <section>
-                <h1>Evaluaciones [{evaluacionesLength}]</h1>
+                <h1>Evaluaciones [{el}]</h1>
+
                 <table border={1}>
                     <thead>
                     <tr>
@@ -112,10 +84,6 @@ class AppEvaluaciones extends React.Component {
     }
 }
 
-AppEvaluaciones.contextTypes = {
-    drizzle: PropTypes.object
-};
+export default AppEvaluaciones;
 
-const AppEvaluacionesContainer = drizzleConnect(AppEvaluaciones, mapStateToProps);
 
-export default AppEvaluacionesContainer;

@@ -1,19 +1,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { DrizzleProvider } from 'drizzle-react';
+import { Drizzle } from 'drizzle';
+import { DrizzleContext } from "drizzle-react";
 
 import './css/index.css';
 import './css/App.css';
 
 import App from './components/App';
 
-import options from "./drizzle";
+import drizzleOptions from "./drizzle";
 
+const drizzle = new Drizzle(drizzleOptions);
 
 ReactDOM.render(
-	<DrizzleProvider options={options}>
+	<DrizzleContext.Provider drizzle={drizzle}>
 		<App />
-	</DrizzleProvider>,
+	</DrizzleContext.Provider>,
 	document.getElementById('root')
 );
