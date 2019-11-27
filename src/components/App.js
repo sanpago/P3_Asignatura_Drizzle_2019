@@ -2,10 +2,27 @@ import React from 'react';
 
 import {DrizzleContext} from "drizzle-react";
 
+import {
+    BrowserRouter as Router,
+    Route,
+    Link
+} from "react-router-dom";
+
 import AppHeader from './AppHeader';
 import AppEvaluaciones from "./AppEvaluaciones";
 import AppAlumnos from "./AppAlumnos";
 import AppCalificaciones from "./AppCalificaciones";
+
+const Navegacion = () => (
+    <nav>
+        <ul>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/evaluaciones/">Evaluaciones</Link></li>
+            <li><Link to="/alumnos/">Alumnos</Link></li>
+            <li><Link to="/calificaciones/">Calificaciones</Link></li>
+        </ul>
+    </nav>
+);
 
 export default () => (
     <DrizzleContext.Consumer>
@@ -19,17 +36,29 @@ export default () => (
             }
 
             return (
-                <main>
+                <Router>
+                    <Navegacion/>
+
                     <AppHeader drizzle={drizzle}
                                drizzleState={drizzleState}/>
-                    <AppEvaluaciones drizzle={drizzle}
-                                     drizzleState={drizzleState}/>
-                    <AppAlumnos drizzle={drizzle}
-                                drizzleState={drizzleState}/>
-                    <AppCalificaciones drizzle={drizzle}
-                                       drizzleState={drizzleState}/>
-                </main>
-            );
+
+                    <Route path="/" exact>
+                        <p>Bienvenido a la práctica de BCDA. </p>
+                    </Route>
+                    < Route path="/evaluaciones/">
+                        <AppEvaluaciones drizzle={drizzle}
+                                         drizzleState={drizzleState}/>
+                    </Route>
+                    <Route path="/alumnos/">
+                        <AppAlumnos drizzle={drizzle}
+                                    drizzleState={drizzleState}/>
+                    </Route>
+                    <Route path="/calificaciones/">
+                        <AppCalificaciones drizzle={drizzle}
+                                           drizzleState={drizzleState}/>
+                    </Route>
+                </Router>
+            )
         }}
     </DrizzleContext.Consumer>
 );
