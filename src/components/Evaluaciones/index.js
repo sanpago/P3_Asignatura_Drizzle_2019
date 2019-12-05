@@ -4,15 +4,11 @@ import {newContextComponents} from "drizzle-react-components";
 
 const {ContractData} = newContextComponents;
 
-class AppEvaluaciones extends React.Component {
+class Evaluaciones extends React.Component {
 
     state = {
         ready: false,
         evaluacionesLengthKey: null
-    }
-
-    constructor(props) {
-        super(props)
     }
 
     componentDidMount() {
@@ -48,6 +44,7 @@ class AppEvaluaciones extends React.Component {
         for (let i = 0; i < el; i++) {
             tbody[i] = (
                 <ContractData
+                    key={"Eva_"+i}
                     drizzle={drizzle}
                     drizzleState={drizzleState}
                     contract={"Asignatura"}
@@ -55,7 +52,7 @@ class AppEvaluaciones extends React.Component {
                     methodArgs={[i]}
                     render={evaluacion => (
                         <tr key={"EVA-"+i}>
-                            <th>E {i}</th>
+                            <th>E<sub>{i}</sub></th>
                             <td>{evaluacion.nombre}</td>
                             <td>{evaluacion.fecha ? (new Date(1000 * evaluacion.fecha)).toLocaleString() : ""}</td>
                             <td>{(evaluacion.puntos / 10).toFixed(1)}</td>
@@ -84,6 +81,6 @@ class AppEvaluaciones extends React.Component {
     }
 }
 
-export default AppEvaluaciones;
+export default Evaluaciones;
 
 
